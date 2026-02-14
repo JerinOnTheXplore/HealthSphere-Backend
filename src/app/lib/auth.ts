@@ -38,5 +38,5 @@ export const auth = betterAuth({
                 defaultValue:null
             },
         }
-    },
+    }
 });

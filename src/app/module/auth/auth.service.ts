@@ -1,11 +1,13 @@
-import { auth } from "../../lib/auth";
 
+import { auth } from "../../lib/auth";
 
 interface IRegisterPatientPayload {
     name: string;
     email: string;
     password: string;
 }
+
+
 
 const registerPatient = async (payload:IRegisterPatientPayload) =>{
     const {name,email,password} = payload;
@@ -25,10 +27,32 @@ const registerPatient = async (payload:IRegisterPatientPayload) =>{
     }
 
     //TODO create patient profile in registration after signup of patient in user model..
+
+    // const patient = await prisma.$transaction( async (tx) => {
+    //     await tx.
+    // })
     
-    return data
+    return data;
+}
+
+interface ILoginUserPayload{
+    email:string;
+    password:string;
+}
+
+const loginUser = async (payload: ILoginUserPayload) => {
+    const {email,password} = payload;
+    const data = await auth.api.signInEmail({
+        body:{
+            email,
+            password,
+        }
+    })
+
+    return data;
 }
 
 export const AuthService = {
     registerPatient,
+    loginUser
 }
