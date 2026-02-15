@@ -1,4 +1,6 @@
 
+import { error } from "node:console";
+import { UserStatus } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
 
 interface IRegisterPatientPayload {
@@ -48,6 +50,14 @@ const loginUser = async (payload: ILoginUserPayload) => {
             password,
         }
     })
+
+    if(data.user.status === UserStatus.BLOCKED){
+        throw new Error("User is blocked") ;
+    }
+
+    if(data.user.isDeleted || data.user.status === UserStatus.DELETED){
+        throw new Error("User is created")
+    }
 
     return data;
 }
