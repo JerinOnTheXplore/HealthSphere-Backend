@@ -2,6 +2,7 @@
 import { error } from "node:console";
 import { UserStatus } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
+import { prisma } from "../../lib/prisma";
 
 interface IRegisterPatientPayload {
     name: string;
@@ -30,11 +31,21 @@ const registerPatient = async (payload:IRegisterPatientPayload) =>{
 
     //TODO create patient profile in registration after signup of patient in user model..
 
-    // const patient = await prisma.$transaction( async (tx) => {
-    //     await tx.
-    // })
+    const patient = await prisma.$transaction( async (tx) => {
+       const patientTx = await tx.patient.create({
+            data:{
+                userId: data.user.id,
+                name: payload.name,
+                email: payload.email,
+            }
+        })
+        return patientTx;
+    })
     
-    return data;
+    return {
+        ...data,
+        patient,
+    }
 }
 
 interface ILoginUserPayload{
