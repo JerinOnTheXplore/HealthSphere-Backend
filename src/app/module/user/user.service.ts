@@ -71,9 +71,34 @@ const createDoctor = async (payload:ICreateDoctorPayload )=>{
                     designation: true,
                     createdAt: true,
                     updatedAt: true,
-                    
+                    user:{
+                        select:{
+                            id: true,
+                            email: true,
+                            name: true,
+                            role: true,
+                            status: true,
+                            emailVerified: true,
+                            image: true,
+                            isDeleted: true,
+                            deletedAt: true,
+                            createdAt: true,
+                            updatedAt: true,
+                        }
+                    },
+                    specialities:{
+                        select: {
+                          speciality:{
+                            select:{
+                                title:true,
+                                id:true
+                             }
+                          }
+                        }
+                    }
             }
         })
+        return doctor;
        })
     }catch(error){
         console.log("Transaction error : ",error);
@@ -84,4 +109,8 @@ const createDoctor = async (payload:ICreateDoctorPayload )=>{
         })
         throw error;
     }
+}
+
+export const UserService = {
+    createDoctor,
 }
