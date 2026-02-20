@@ -1,5 +1,5 @@
 
-import { error } from "node:console";
+
 import { UserStatus } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
@@ -74,14 +74,19 @@ const registerPatient = async (payload:IRegisterPatientPayload) =>{
         refreshToken,
         patient,
     }
-    } catch {
-       console.log("Transaction error:", error);
-       await prisma.user.delete({
+    } catch (err:any) {
+       console.error("Transaction error:", err);
+       if (data?.user?.id) {
+      await prisma.user.delete({
          where:{
             id: data.user.id
          }
-       })
-       throw error;
+      })
+   }
+       throw new AppError(
+      status.INTERNAL_SERVER_ERROR,
+      err?.message || "Patient registration failed"
+   );
     }
 }
 
