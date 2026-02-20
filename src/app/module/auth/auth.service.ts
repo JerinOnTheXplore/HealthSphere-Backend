@@ -74,19 +74,14 @@ const registerPatient = async (payload:IRegisterPatientPayload) =>{
         refreshToken,
         patient,
     }
-    } catch (err:any) {
-       console.error("Transaction error:", err);
-       if (data?.user?.id) {
-      await prisma.user.delete({
-         where:{
-            id: data.user.id
-         }
-      })
-   }
-       throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      err?.message || "Patient registration failed"
-   );
+    } catch (error) {
+        console.log("Transaction error : ", error);
+        await prisma.user.delete({
+            where: {
+                id: data.user.id
+            }
+        })
+        throw error;
     }
 }
 
