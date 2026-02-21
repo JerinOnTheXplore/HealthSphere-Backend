@@ -1,4 +1,4 @@
-import { JwtPayload, SignOptions } from "jsonwebtoken";
+import { JwtPayload } from "jsonwebtoken";
 import { jwtUtils } from "./jwt";
 import { envVars } from "../../config/env";
 import { Response } from "express";
@@ -6,22 +6,21 @@ import { CookieUtils } from "./cookie";
 
 
 //creating access token..
-const getAccessToken = (payload: JwtPayload)=>{
-    const accessToken = jwtUtils.createToken(
-        payload,
-        envVars.ACCESS_TOKEN_SECRET,
-        {expiresIn: envVars.ACCESS_TOKEN_EXPIRES_IN} as SignOptions
-    );
-    return accessToken;
-}
+const getAccessToken = (payload: JwtPayload) => {
+  return jwtUtils.createToken(
+    payload,
+    envVars.ACCESS_TOKEN_SECRET,
+    envVars.ACCESS_TOKEN_EXPIRES_IN
+  );
+};
+
 const getRefreshToken = (payload: JwtPayload) => {
-    const refreshToken = jwtUtils.createToken(
-        payload,
-        envVars.REFRESH_TOKEN_SECRET,
-        { expiresIn: envVars.REFRESH_TOKEN_EXPIRES_IN } as SignOptions
-    );
-    return refreshToken;
-}
+  return jwtUtils.createToken(
+    payload,
+    envVars.REFRESH_TOKEN_SECRET,
+    envVars.REFRESH_TOKEN_EXPIRES_IN
+  );
+};
 
 const setAccessTokenCookie = (res:Response, token:string)=>{
     CookieUtils.setCookie(res, 'accessToken', token, {
