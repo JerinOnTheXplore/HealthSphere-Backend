@@ -7,6 +7,9 @@ import AppError from "../../errorHelpers/AppError";
 import status from "http-status";
 import { tokenUtils } from "../../utils/token";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
+import { jwtUtils } from "../../utils/jwt";
+import { envVars } from "../../../config/env";
+import { JwtPayload } from "jsonwebtoken";
 
 interface IRegisterPatientPayload {
     name: string;
@@ -171,8 +174,69 @@ const getMe = async (user : IRequestUser) => {
     return isUserExists;
 }
 
+//refresh token flow..
+//ei function er kaj old refresh token diye new acess token,refresh token banano,session validity update kora..
+//refreshToken JWT verify korte..
+//sessionToken Database session validate korte,..shudhu jwt thaklei safe na..database session thakao joruri..eta dual layer security..
+const getNewToken = async (refreshToken:string,sessionToken:string)=>{
+    const isSessionTokenExists = await prisma.session.findUnique({
+        where:{
+            token:sessionToken,
+        },
+        include:{
+            user: true,//session er sathe user data o niye ashe
+        }
+    })
+    if(!isSessionTokenExists){
+        throw new AppError(status.UNAUTHORIZED,"Invalid session token");//jodi session db te na thake tahole user logout korse,admin manually revoke korse,token tampered..401 dey
+    }
+    const verifiedRefreshToken = jwtUtils.verifyToken(refreshToken,envVars.REFRESH_TOKEN_SECRET)//jwt verify na korle j kew fake token banabe..verfify kore check kore j //Secret match korche?
+    //Expired?
+    //Corrupted??
+    if(!verifiedRefreshToken.success && verifiedRefreshToken.error){
+        throw new AppError(status.UNAUTHORIZED,"Invalid Refesh token")
+    }
+    const data = verifiedRefreshToken.data as JwtPayload;
+    const newAccessToken = tokenUtils.getAccessToken({
+        userId: data.userId,
+        role: data.role,
+        name: data.name,
+        email: data.email,
+        status: data.status,
+        isDeleted: data.isDeleted,
+        emailVerified: data.emailVerified,
+    })
+
+    const newRefreshToken = tokenUtils.getRefreshToken({
+        userId: data.userId,
+        role: data.role,
+        name: data.name,
+        email: data.email,
+        status: data.status,
+        isDeleted: data.isDeleted,
+        emailVerified: data.emailVerified,
+    });
+
+    const {token} = await prisma.session.update({
+        where:{
+            token:sessionToken
+        },
+        data: {
+            token : sessionToken,
+            expiresAt: new Date(Date.now() + 60 * 60 * 24 * 1000),
+            updatedAt: new Date(),
+        }
+    })
+    return {
+        accessToken : newAccessToken,
+        refreshToken : newRefreshToken,
+        sessionToken : token,
+    }
+}
+
 export const AuthService = {
     registerPatient,
     loginUser,
     getMe,
+    getNewToken,
 }
