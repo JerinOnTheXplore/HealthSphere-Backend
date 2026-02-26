@@ -10,6 +10,7 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { jwtUtils } from "../../utils/jwt";
 import { envVars } from "../../../config/env";
 import { JwtPayload } from "jsonwebtoken";
+import { IChangePasswordPayload } from "./auth.interface";
 
 interface IRegisterPatientPayload {
     name: string;
@@ -234,9 +235,70 @@ const getNewToken = async (refreshToken:string,sessionToken:string)=>{
     }
 }
 
+const changePassword = async (payload: IChangePasswordPayload,sessionToken:string )=>{
+    const session = await auth.api.getSession({
+        headers: new Headers({
+            Authorization :`Bearer ${sessionToken}`
+        })
+    })//session token diye session validate korlam.
+
+    if (!session){
+        throw new AppError(status.UNAUTHORIZED, "Invalid session token");
+    }//session invalid hole UNAUTHORIZED throw korbe..
+
+    const {currentPassword,newPassword} = payload;//pass change req..
+
+    const result = await auth.api.changePassword({
+        body:{
+            currentPassword,
+            newPassword,
+            revokeOtherSessions:true,//onno sob session invalidate hobe
+        },
+        headers:new Headers({
+            Authorization: `Bearer ${sessionToken}`
+        })
+    })
+
+    if (session.user.needPasswordChange){
+        await prisma.user.update({
+            where:{
+                id:session.user.id,
+            },
+            data:{
+                needPasswordChange:false,
+            }
+        })
+    }//user er db te needPasswordChange true thakle seta false set korsi..
+    const accessToken = tokenUtils.getAccessToken({
+        userId:session.user.id,
+        role:session.user.role,
+        name:session.user.name,
+        email:session.user.email,
+        status:session.user.status,
+        isDeleted:session.user.isDeleted,
+        emailVerified:session.user.emailVerified,
+    });
+
+    const refreshToken = tokenUtils.getRefreshToken({
+        userId:session.user.id,
+        role:session.user.role,
+        name:session.user.name,
+        email:session.user.email,
+        status:session.user.status,
+        isDeleted:session.user.isDeleted,
+        emailVerified:session.user.emailVerified,
+    });//pass change korar por new access token and refresh token generate hobe..
+    return {
+        ...result,
+        accessToken,
+        refreshToken,
+    }
+}//Change password result + new accessToken & refreshToken return kore
+
 export const AuthService = {
     registerPatient,
     loginUser,
     getMe,
     getNewToken,
+    changePassword,
 }
