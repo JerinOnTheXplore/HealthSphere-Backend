@@ -242,6 +242,8 @@ const changePassword = async (payload: IChangePasswordPayload,sessionToken:strin
         })
     })//session token diye session validate korlam.
 
+console.log("Session token sent:", sessionToken);
+console.log("Session response:", session);
     if (!session){
         throw new AppError(status.UNAUTHORIZED, "Invalid session token");
     }//session invalid hole UNAUTHORIZED throw korbe..
@@ -295,10 +297,21 @@ const changePassword = async (payload: IChangePasswordPayload,sessionToken:strin
     }
 }//Change password result + new accessToken & refreshToken return kore
 
+const logoutUser = async (sessionToken : string) => {
+    const result = await auth.api.signOut({
+        headers : new Headers({
+            Authorization : `Bearer ${sessionToken}`
+        })
+    })
+    //await auth.api.signOut eta better auth er built in method
+//j session diye user logged in chilo seta invalidate or delete kore dicche..
+    return result;
+}
 export const AuthService = {
     registerPatient,
     loginUser,
     getMe,
     getNewToken,
     changePassword,
+    logoutUser
 }
