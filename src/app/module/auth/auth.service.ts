@@ -10,13 +10,7 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { jwtUtils } from "../../utils/jwt";
 import { envVars } from "../../../config/env";
 import { JwtPayload } from "jsonwebtoken";
-import { IChangePasswordPayload } from "./auth.interface";
-
-interface IRegisterPatientPayload {
-    name: string;
-    email: string;
-    password: string;
-}
+import { IChangePasswordPayload, ILoginUserPayload, IRegisterPatientPayload } from "./auth.interface";
 
 
 
@@ -88,11 +82,6 @@ const registerPatient = async (payload:IRegisterPatientPayload) =>{
         })
         throw error;
     }
-}
-
-interface ILoginUserPayload{
-    email:string;
-    password:string;
 }
 
 const loginUser = async (payload: ILoginUserPayload) => {
@@ -224,7 +213,7 @@ const getNewToken = async (refreshToken:string,sessionToken:string)=>{
         },
         data: {
             token : sessionToken,
-            expiresAt: new Date(Date.now() + 60 * 60 * 24 * 1000),
+            expiresAt: new Date(Date.now() + 60 * 60 * 60 * 24 * 1000),
             updatedAt: new Date(),
         }
     })
@@ -236,11 +225,15 @@ const getNewToken = async (refreshToken:string,sessionToken:string)=>{
 }
 
 const changePassword = async (payload: IChangePasswordPayload,sessionToken:string )=>{
+    console.log("Session token type:", typeof sessionToken);
+    console.log("Session token length:", sessionToken?.length);
+    console.log("Session token first 10 chars:", sessionToken?.substring(0, 10));
     const session = await auth.api.getSession({
         headers: new Headers({
-            Authorization :`Bearer ${sessionToken}`
+            'Authorization': `Bearer ${sessionToken}`
         })
     })//session token diye session validate korlam.
+      console.log("Session with Cookie token:", session);
 
 console.log("Session token sent:", sessionToken);
 console.log("Session response:", session);
@@ -257,7 +250,7 @@ console.log("Session response:", session);
             revokeOtherSessions:true,//onno sob session invalidate hobe
         },
         headers:new Headers({
-            Authorization: `Bearer ${sessionToken}`
+             'Authorization': `Bearer ${sessionToken}`
         })
     })
 
@@ -307,11 +300,42 @@ const logoutUser = async (sessionToken : string) => {
 //j session diye user logged in chilo seta invalidate or delete kore dicche..
     return result;
 }
+//puro function er kaj holo user j otp diyeche seta verify kora..then db te emailVerified true kore dewa...
+//frontend theke 2 ta jinish ashbe ..user email r user er dewa otp
+const verifyEmail = async (email : string, otp : string) => {
+
+    const result = await auth.api.verifyEmailOTP({
+        body:{
+            email,
+            otp,
+        }
+    })//ekhane better auth k bolchi ei email er jonno dewa otp verify koro..
+    //ekhane inernally ja hoy---
+    /**
+     * db theke otp khuje..
+     * expiry check kore
+     * match kore..
+     * valid hole success ashbe..
+     */
+//jodi opt valid but user.emailVerified ekhono false hoy then db update hoy...
+    if(result.status && !result.user.emailVerified){
+        await prisma.user.update({
+            where : {
+                email,
+            },
+            data : {
+                emailVerified: true,
+            }
+        })
+    }
+}
+
 export const AuthService = {
     registerPatient,
     loginUser,
     getMe,
     getNewToken,
     changePassword,
-    logoutUser
+    logoutUser,
+    verifyEmail,
 }

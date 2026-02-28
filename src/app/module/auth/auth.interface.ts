@@ -12,4 +12,5 @@ export interface IRegisterPatientPayload {
 export interface IChangePasswordPayload {
     currentPassword: string;
     newPassword: string;
+    revokeOtherSessions?: boolean;
 }

@@ -146,6 +146,26 @@ const logoutUser = catchAsync(
         });
     }
 )
+
+//ekhane ja korbe --------
+/**
+ * requset dhore
+ * essential data ber kore,
+ * service call kore
+ * response pathay
+ */
+const verifyEmail = catchAsync(
+    async (req: Request, res: Response) => {
+        const { email, otp } = req.body;
+        await AuthService.verifyEmail(email, otp);
+//service layer e verify howa otp r update howa db controller e just call hoy..
+        sendResponse(res, {
+            httpStatusCode: status.OK,
+            success: true,
+            message: "Email verified successfully",
+        });
+    }
+)
 export const AuthController = {
     registerPatient,
     loginUser,
@@ -153,4 +173,5 @@ export const AuthController = {
     getNewToken,
     changePassword,
     logoutUser,
+    verifyEmail,
 }
