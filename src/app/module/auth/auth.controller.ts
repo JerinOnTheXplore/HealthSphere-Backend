@@ -166,6 +166,22 @@ const verifyEmail = catchAsync(
         });
     }
 )
+
+const forgetPassword = catchAsync(
+    async (req: Request, res: Response) => {
+        const { email } = req.body;
+        await AuthService.forgetPassword(email);
+
+        sendResponse(res, {
+            httpStatusCode: status.OK,
+            success: true,
+            message: "Password reset OTP sent to email successfully",
+        });
+    }
+)//req theke data nichche
+
+//2, service call kore..
+//3. response pathay..
 export const AuthController = {
     registerPatient,
     loginUser,
@@ -174,4 +190,5 @@ export const AuthController = {
     changePassword,
     logoutUser,
     verifyEmail,
+    forgetPassword,
 }

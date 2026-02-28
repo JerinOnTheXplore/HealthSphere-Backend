@@ -330,6 +330,41 @@ const verifyEmail = async (email : string, otp : string) => {
     }
 }
 
+const forgetPassword = async (email : string) => {
+    const isUserExist = await prisma.user.findUnique({//prisma diye db te user khujchche..email unique field dhore..
+        where : {
+            email,
+        }
+    })
+    //user na thakle
+    if(!isUserExist){
+        throw new AppError(status.NOT_FOUND, "User not found");
+    }//db te ei email nai.404 error dibe...
+//security wise onek system ekhane generic message dey
+// jate attacker bujhte na pare email exist kore kina..
+    if(!isUserExist.emailVerified){
+        throw new AppError(status.BAD_REQUEST, "Email not verified");
+    }//user regi korleo email verify na korle pass reset korte parbena..
+
+    if(isUserExist.isDeleted || isUserExist.status === UserStatus.DELETED){
+        throw new AppError(status.NOT_FOUND, "User not found"); 
+    }//ekhane soft delete ar status enum check hoy
+    //mane deleted user pass reset korte parbena..
+//otp request..
+    await auth.api.requestPasswordResetEmailOTP({
+        body:{
+            email,
+        }
+    })
+    //ekhane better auth--
+    /**
+     * otp generate kore,
+     * otp store kore db te..
+     * expiry time set kore,
+     * email pathabe amar email config diye..
+     */
+}
+
 export const AuthService = {
     registerPatient,
     loginUser,
@@ -338,4 +373,5 @@ export const AuthService = {
     changePassword,
     logoutUser,
     verifyEmail,
+    forgetPassword,
 }
