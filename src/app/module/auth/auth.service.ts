@@ -365,6 +365,51 @@ const forgetPassword = async (email : string) => {
      */
 }
 
+const resetPassword = async (email : string, otp : string, newPassword : string) => {
+    const isUserExist = await prisma.user.findUnique({
+        where: {
+            email,//prisma use kore db theke email onujayi user khuje..karon jodi emon user na thake pass reset somvob na..
+        }
+    })
+
+    if (!isUserExist) {
+        throw new AppError(status.NOT_FOUND, "User not found");
+    }//user db te pawa na gele 404 throw korbe..
+
+    if (!isUserExist.emailVerified) {
+        throw new AppError(status.BAD_REQUEST, "Email not verified");
+    }//jodi user er email verify kora na thake tobe pass reset deny kore..unverified email hole secyrity risk hote pare
+
+    if (isUserExist.isDeleted || isUserExist.status === UserStatus.DELETED) {
+        throw new AppError(status.NOT_FOUND, "User not found");
+    }//soft deleted /blocked user er jonno password reset disallow kora hoy..
+
+    await auth.api.resetPasswordEmailOTP({
+        body:{
+            email,
+            otp,
+            password : newPassword,
+        }//external auth api k call kore pass reset kora hoy..
+    })
+
+    if (isUserExist.needPasswordChange) {
+        await prisma.user.update({
+            where: {
+                id: isUserExist.id,
+            },
+            data: {
+                needPasswordChange: false,
+            }//jodi user er account e needPasswordChange flag true thake seti false set kora hoy..
+        })
+    }
+
+    await prisma.session.deleteMany({
+        where:{
+            userId : isUserExist.id,
+        }//user er existing sob sessions delete kore...old sesion invalid hoye jay..newly set pass diye user re login korbe..
+    })
+}
+
 export const AuthService = {
     registerPatient,
     loginUser,
@@ -374,4 +419,5 @@ export const AuthService = {
     logoutUser,
     verifyEmail,
     forgetPassword,
+    resetPassword,
 }
